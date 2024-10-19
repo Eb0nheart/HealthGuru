@@ -1,0 +1,62 @@
+﻿@page "/foodcatalog"
+@using HealthGuru.Data.Models
+@using HealthGuru.Data.Repositories
+@using System.Collections.ObjectModel
+
+<PageTitle>Food Catalog</PageTitle>
+
+<MudDataGrid Elevation="4" Class="ma-6" T="Food" Items="Foods" QuickFilter="Filter">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Food Catalog</MudText>
+        <MudSpacer />
+        <MudTextField @bind-Value="SearchText" Placeholder="Search" Adornment="Adornment.Start" Immediate="true" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.Name"/>
+        <PropertyColumn Property="x => x.Calories" />
+        <PropertyColumn Property="x => x.Fat" />
+        <PropertyColumn Property="x => x.Protein" />
+        <PropertyColumn Property="x => x.Carbohydrates" Title="Kcal" />
+    </Columns>
+    <PagerContent>
+        <MudDataGridPager T="Food" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    [Inject] public FoodRepository FoodRepository { get; set; }
+    [Inject] public ISnackbar Snackbar { get; set; }
+
+    private ObservableCollection<Food> Foods { get; set; } = [];
+
+    // display properties 
+    private bool IsLoading { get; set; }
+    private string SearchText { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            (await FoodRepository.GetAllFoodsAsync()).ToList().ForEach(Foods.Add);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Error trying to load foods!", Severity.Error);
+        }
+        finally
+        {
+            IsLoading = false;    
+        }
+    }
+
+    private bool Filter(Food food)
+    {
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            return true;
+        }
+
+        return food.Name.ToLowerInvariant().Contains(SearchText.ToLowerInvariant());
+    }
+}
